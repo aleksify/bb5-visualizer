@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
 
 #define TAPE_SIZE 32768   /* tape has be infinite but for bb5 it's enough */
@@ -38,8 +37,7 @@ static const int	g_table[5][2][3] = {
 
 static const char	*g_states = "ABCDE*";
 
-static void			render(const unsigned char *tape, int head, int state, long step,
-						int tape_min, int tape_max);
+static void			render(const unsigned char *tape, int head, int state, long step, int tape_min, int tape_max);
 
 int	main(void)
 {
@@ -93,7 +91,7 @@ static void	render(const unsigned char *tape, int head, int state, long step, in
 		if (i == head)
 			printf("\033[7m%c\033[0m", tape[i] + '0');
 		else
-			putchar(tape[i] + '0');
+			printf("%c", tape[i] + '0');
 	}
 	printf("\n");
 	fflush(stdout);
