@@ -5,9 +5,13 @@
 
 #define TAPE_SIZE 32768   /* tape has be infinite but for bb5 it's enough */
 #define TAPE_OFFSET 16384 /* head starts in the middle */
-#define INTERVAL 1
-#define SLEEP_US 10000
 #define TOTAL_STEPS 47176870L
+#ifndef INTERVAL
+# define INTERVAL 1
+#endif
+#ifndef SLEEP_US
+# define SLEEP_US 10000
+#endif
 
 /*
  * Busy Beaver 5-state champion (Marxen & Buntrock, 1989)
@@ -92,9 +96,9 @@ static void	render(const unsigned char *tape, int head, int state, long step)
 	for (int i = tape_start; i <= tape_end; i++)
 	{
 		if (i == head)
-			printf("\033[7m%c\033[0m", tape[i] ? '1' : '0');
+			printf("\033[7m%c\033[0m", tape[i] + '0');
 		else
-			putchar(tape[i] ? '1' : '0');
+			putchar(tape[i] + '0');
 	}
 	printf("\n");
 	fflush(stdout);
