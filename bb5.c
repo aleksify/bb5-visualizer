@@ -5,6 +5,8 @@
 
 #define TAPE_SIZE 32768   /* tape has be infinite but for bb5 it's enough */
 #define TAPE_OFFSET 16384 /* head starts in the middle */
+#define INTERVAL 1
+#define SLEEP_US 10000
 
 /*
  * Busy Beaver 5-state champion (Marxen & Buntrock, 1989)
@@ -37,15 +39,28 @@ static const int	g_table[5][2][3] = {
 	/* E */ {{1, +1, HALT}, {0, -1, A}},
 };
 
+const char			*g_states = "ABCDE*";
+long				g_total = 47176870L;
+
 int	main(void)
 {
-	unsigned char	*tape;
-	int				head;
-	int				state;
-	long			step;
+	unsigned char *tape;
+	int head;
+	int state;
+	long step;
 
 	tape = calloc(TAPE_SIZE, 1);
 	head = TAPE_OFFSET;
 	state = A;
 	step = 0;
+	while (state != HALT)
+	{
+		int sym = tape[head];
+		const int *t = g_table[state][sym];
+		tape[head] = t[0];
+		head += t[1];
+		state = t[2];
+		step++;
+	}
+	return (0);
 }
