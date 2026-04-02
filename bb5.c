@@ -7,6 +7,7 @@
 #define TAPE_OFFSET 16384 /* head starts in the middle */
 #define INTERVAL 1
 #define SLEEP_US 10000
+#define TOTAL_STEPS 47176870L
 
 /*
  * Busy Beaver 5-state champion (Marxen & Buntrock, 1989)
@@ -39,15 +40,19 @@ static const int	g_table[5][2][3] = {
 	/* E */ {{1, +1, HALT}, {0, -1, A}},
 };
 
-const char			*g_states = "ABCDE*";
-long				g_total = 47176870L;
+static const char	*g_states = "ABCDE*";
+
+static void			render(const unsigned char *tape, int head, int state,
+						long step);
 
 int	main(void)
 {
-	unsigned char *tape;
-	int head;
-	int state;
-	long step;
+	unsigned char	*tape;
+	int				head;
+	int				state;
+	long			step;
+	int				sym;
+	int				*t;
 
 	tape = calloc(TAPE_SIZE, 1);
 	head = TAPE_OFFSET;
@@ -55,12 +60,54 @@ int	main(void)
 	step = 0;
 	while (state != HALT)
 	{
-		int sym = tape[head];
-		const int *t = g_table[state][sym];
+		sym = tape[head];
+		t = g_table[state][sym];
 		tape[head] = t[0];
 		head += t[1];
 		state = t[2];
 		step++;
+		if (step % INTERVAL == 0)
+		{
+			render(tape, head, state, step);
+			usleep(SLEEP_US);
+		}
 	}
+	render(tape, head, state, step);
+	free(tape);
 	return (0);
+}
+
+static void	render(const unsigned char *tape, int head, int state, long step)
+{
+	int		tlo;
+	int		thi;
+	double	eta;
+
+	tlo = head;
+	thi = head;
+	for (int i = 0; i < TAPE_SIZE; i++)
+	{
+		if (tape[i] || i == head)
+		{
+			if (i < tlo)
+				tlo = i;
+			if (i > thi)
+				thi = i;
+		}
+	}
+	eta = ((TOTAL_STEPS - step) / INTERVAL) * (SLEEP_US / 1e6);
+	printf("\033[H\033[J");
+	printf("Step %10ld / %ld (%5.1f%%) | State %c | Width %5d | Head @%-5d | ETA %03d:%02d:%02d\n\n",
+		step, TOTAL_STEPS, 100.0 * step / TOTAL_STEPS,
+		g_states[state], thi - tlo + 1, head - tlo,
+		(int)(eta / 3600), (int)(eta / 60) % 60, (int)eta % 60);
+	for (int i = tlo; i <= thi; i++)
+	{
+		if (i == head)
+			printf("\033[7m%c\033[0m", tape[i] ? '1' : '0');
+		else
+			putchar(tape[i] ? '1' : '0');
+	}
+	printf("\n");
+	fflush(stdout);
 }
