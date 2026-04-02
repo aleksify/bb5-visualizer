@@ -38,7 +38,8 @@ static const int	g_table[5][2][3] = {
 
 static const char	*g_states = "ABCDE*";
 
-static void			render(const unsigned char *tape, int head, int state, long step);
+static void			render(const unsigned char *tape, int head, int state, long step,
+						int tape_min, int tape_max);
 
 int	main(void)
 {
@@ -46,54 +47,48 @@ int	main(void)
 	int				head;
 	int				state;
 	long			step;
+	int				tape_min;
+	int				tape_max;
 
 	tape = calloc(TAPE_SIZE, 1);
 	head = TAPE_OFFSET;
 	state = A;
 	step = 0;
+	tape_min = head;
+	tape_max = head;
 	while (state != HALT)
 	{
 		const int *t = g_table[state][tape[head]];
 		tape[head] = t[0];
 		head += t[1];
 		state = t[2];
+		if (head < tape_min)
+			tape_min = head;
+		if (head > tape_max)
+			tape_max = head;
 		step++;
 		if (step % INTERVAL == 0)
 		{
-			render(tape, head, state, step);
+			render(tape, head, state, step, tape_min, tape_max);
 			usleep(SLEEP_US);
 		}
 	}
-	render(tape, head, state, step);
+	render(tape, head, state, step, tape_min, tape_max);
 	free(tape);
 	return (0);
 }
 
-static void	render(const unsigned char *tape, int head, int state, long step)
+static void	render(const unsigned char *tape, int head, int state, long step, int tape_min, int tape_max)
 {
-	int		tape_start;
-	int		tape_end;
-	double	eta;
+	long	eta;
 
-	tape_start = head;
-	tape_end = head;
-	for (int i = 0; i < TAPE_SIZE; i++)
-	{
-		if (tape[i] || i == head)
-		{
-			if (i < tape_start)
-				tape_start = i;
-			if (i > tape_end)
-				tape_end = i;
-		}
-	}
-	eta = ((TOTAL_STEPS - step) / INTERVAL) * (SLEEP_US / 1e6);
+	eta = ((TOTAL_STEPS - step) / INTERVAL) * SLEEP_US / 1000000;
 	printf("\033[H\033[J");
-	printf("Step %10ld / %ld (%5.1f%%) | State %c | Width %5d | Head @%-5d | ETA %03d:%02d:%02d\n\n",
+	printf("Step %10ld / %ld (%5.1f%%) | State %c | Width %5d | Head @%-5d | ETA %03ld:%02ld:%02ld\n\n",
 		step, TOTAL_STEPS, 100.0 * step / TOTAL_STEPS,
-		g_states[state], tape_end - tape_start + 1, head - tape_start,
-		(int)(eta / 3600), (int)(eta / 60) % 60, (int)eta % 60);
-	for (int i = tape_start; i <= tape_end; i++)
+		g_states[state], tape_max - tape_min + 1, head - tape_min,
+		eta / 3600, (eta / 60) % 60, eta % 60);
+	for (int i = tape_min; i <= tape_max; i++)
 	{
 		if (i == head)
 			printf("\033[7m%c\033[0m", tape[i] + '0');
